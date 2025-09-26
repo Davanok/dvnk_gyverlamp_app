@@ -1,3 +1,15 @@
 <resources>
     <string name="app_name">FireLamp</string>
+    <string name="menu">Menu</string>
+
+    <!--Navigation-->
+    <string name="lamp_control">Lamp control</string>
+    <string name="connection">Connection</string>
+    <string name="app_settings">App settings</string>
+    <string name="effects_settings">Effects settings</string>
+    <string name="cycle_settings">Cycle settings</string>
+    <string name="alarm_settings">Alarm settings</string>
+    <string name="turn_off_timer">Turn of timer</string>
+    <string name="drawing">Drawing</string>
+    <string name="language">Language</string>
 </resources>

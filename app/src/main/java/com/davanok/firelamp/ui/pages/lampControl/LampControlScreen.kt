@@ -8,4 +8,5 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 fun LampControlScreen(
     viewModel: LampControlViewModel = hiltViewModel()
 ) {
+
 }
