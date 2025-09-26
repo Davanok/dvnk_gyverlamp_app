@@ -1,6 +1,7 @@
 package com.davanok.firelamp.data.implementations
 
 import com.davanok.firelamp.data.repositories.FireLampRepository
+import com.davanok.firelamp.data.utils.runLogging
 import io.ktor.network.selector.ActorSelectorManager
 import io.ktor.network.sockets.Datagram
 import io.ktor.network.sockets.InetSocketAddress
@@ -12,26 +13,23 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.time.Duration
 
-class FireLampRepositoryImpl(
-    private val localAddress: InetSocketAddress = InetSocketAddress("127.0.0.1", 9002)
-): FireLampRepository {
+class FireLampRepositoryImpl(): FireLampRepository {
     override suspend fun sendCommand(
         hostname: String,
         port: Int,
         command: String,
         timeout: Duration
-    ): Result<String?> = runCatching {
-        val address = InetSocketAddress(hostname, port)
+    ): Result<String?> = runLogging("sendCommand") {
+        ActorSelectorManager(Dispatchers.IO).use { selector ->
+            aSocket(selector).udp().bind().use { socket ->
+                val packet = buildPacket { writeText(command) }
+                socket.send(Datagram(packet, InetSocketAddress(hostname, port)))
 
-        val selector = ActorSelectorManager(Dispatchers.IO)
-        val socket = aSocket(selector).udp().bind(localAddress)
-
-        val packet = buildPacket { writeText(command) }
-        socket.send(Datagram(packet, address))
-
-        withTimeoutOrNull(timeout) {
-            val response = socket.receive()
-            response.packet.readText()
+                withTimeoutOrNull(timeout) {
+                    val response = socket.receive()
+                    response.packet.readText()
+                }
+            }
         }
     }
 }

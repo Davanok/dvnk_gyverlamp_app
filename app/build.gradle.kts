@@ -73,7 +73,6 @@ dependencies {
     implementation(libs.hilt.navigation.compose)
 
     implementation(libs.ktor.client)
-    implementation(libs.ktor.client.cio)
 
     implementation(libs.androidx.navigation3.runtime)
     implementation(libs.androidx.navigation3.ui)
