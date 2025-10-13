@@ -1,11 +1,13 @@
 package com.davanok.firelamp.data.repositories
 
 import com.davanok.firelamp.data.model.FavouriteConfig
+import com.davanok.firelamp.data.model.LampAddress
+import kotlin.time.Duration
 
 interface FavouritesRepository {
-    suspend fun getFavouritesConfig(): Result<FavouriteConfig>
+    suspend fun getFavouritesConfig(lampAddress: LampAddress, timeout: Duration): Result<FavouriteConfig>
 
-    suspend fun setFavouritesConfig(config: FavouriteConfig): Result<Unit>
+    suspend fun setFavouritesConfig(lampAddress: LampAddress, timeout: Duration, config: FavouriteConfig): Result<Unit>
 
-    suspend fun updateConfig(block: (FavouriteConfig) -> FavouriteConfig): Result<Unit>
+    suspend fun updateConfig(lampAddress: LampAddress, timeout: Duration, block: (FavouriteConfig) -> FavouriteConfig): Result<Unit>
 }

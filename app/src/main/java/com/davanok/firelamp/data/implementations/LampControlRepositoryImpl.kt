@@ -2,34 +2,39 @@ package com.davanok.firelamp.data.implementations
 
 import androidx.compose.ui.util.fastMapNotNull
 import com.davanok.firelamp.data.model.ColorSelectType
+import com.davanok.firelamp.data.model.LampAddress
 import com.davanok.firelamp.data.model.LampEffect
 import com.davanok.firelamp.data.repositories.FavouritesRepository
 import com.davanok.firelamp.data.repositories.FireLampRepository
 import com.davanok.firelamp.data.repositories.LampControlRepository
 import io.ktor.network.sockets.SocketAddress
+import kotlin.time.Duration
 
 class LampControlRepositoryImpl(
-    private val lampAddress: SocketAddress,
     private val repository: FireLampRepository,
     private val favouritesRepository: FavouritesRepository
-): LampControlRepository {
-    override suspend fun turnOnLamp(): Result<Unit> = repository.sendCommand(
-        lampAddress,
-        "P_ON"
-    ).map { }
+) : LampControlRepository {
+    override suspend fun turnOnLamp(lampAddress: LampAddress, timeout: Duration): Result<Unit> =
+        repository.sendCommand(
+            lampAddress,
+            "P_ON"
+        ).map { }
 
-    override suspend fun turnOffLamp(): Result<Unit> = repository.sendCommand(
-        lampAddress,
-        "P_OFF"
-    ).map { }
+    override suspend fun turnOffLamp(lampAddress: LampAddress, timeout: Duration): Result<Unit> =
+        repository.sendCommand(
+            lampAddress,
+            "P_OFF"
+        ).map { }
 
-    override suspend fun enableCycle(): Result<Unit> = favouritesRepository.updateConfig {
-        it.copy(enabled = true)
-    }
+    override suspend fun enableCycle(lampAddress: LampAddress, timeout: Duration): Result<Unit> =
+        favouritesRepository.updateConfig(lampAddress, timeout) {
+            it.copy(enabled = true)
+        }
 
-    override suspend fun diableCycle(): Result<Unit> = favouritesRepository.updateConfig {
-        it.copy(enabled = false)
-    }
+    override suspend fun diableCycle(lampAddress: LampAddress, timeout: Duration): Result<Unit> =
+        favouritesRepository.updateConfig(lampAddress, timeout) {
+            it.copy(enabled = false)
+        }
 
     private fun parseEffectsList(raw: String): List<LampEffect> {
         val entitiesRaw = raw.split(';').drop(1) // drop LIST<n>
@@ -60,7 +65,10 @@ class LampControlRepositoryImpl(
         return result
     }
 
-    override suspend fun getEffectsList(): Result<List<LampEffect>> = runCatching {
+    override suspend fun getEffectsList(
+        lampAddress: LampAddress,
+        timeout: Duration
+    ): Result<List<LampEffect>> = runCatching {
         val result = mutableListOf<LampEffect>()
 
         repeat(10) {
@@ -77,33 +85,51 @@ class LampControlRepositoryImpl(
         result
     }
 
-    override suspend fun setEffect(effectId: UByte): Result<Unit> = repository.sendCommand(
+    override suspend fun setEffect(
+        lampAddress: LampAddress,
+        timeout: Duration,
+        effectId: UByte
+    ): Result<Unit> = repository.sendCommand(
         lampAddress,
         "EFF$effectId"
     ).map { }
 
-    override suspend fun setBrightness(value: UByte): Result<Unit> = repository.sendCommand(
+    override suspend fun setBrightness(
+        lampAddress: LampAddress,
+        timeout: Duration,
+        value: UByte
+    ): Result<Unit> = repository.sendCommand(
         lampAddress,
         "BRI$value"
     ).map { }
 
-    override suspend fun setSpeed(value: UByte): Result<Unit> = repository.sendCommand(
+    override suspend fun setSpeed(
+        lampAddress: LampAddress,
+        timeout: Duration,
+        value: UByte
+    ): Result<Unit> = repository.sendCommand(
         lampAddress,
         "SPD$value"
     ).map { }
 
-    override suspend fun setScale(value: UByte): Result<Unit> = repository.sendCommand(
+    override suspend fun setScale(
+        lampAddress: LampAddress,
+        timeout: Duration,
+        value: UByte
+    ): Result<Unit> = repository.sendCommand(
         lampAddress,
         "SCA$value"
     ).map { }
 
-    override suspend fun setDefault(): Result<Unit> = repository.sendCommand(
-        lampAddress,
-        "RND_0"
-    ).map { }
+    override suspend fun setDefault(lampAddress: LampAddress, timeout: Duration): Result<Unit> =
+        repository.sendCommand(
+            lampAddress,
+            "RND_0"
+        ).map { }
 
-    override suspend fun setRandom(): Result<Unit> = repository.sendCommand(
-        lampAddress,
-        "RND_1"
-    ).map { }
+    override suspend fun setRandom(lampAddress: LampAddress, timeout: Duration): Result<Unit> =
+        repository.sendCommand(
+            lampAddress,
+            "RND_1"
+        ).map { }
 }
