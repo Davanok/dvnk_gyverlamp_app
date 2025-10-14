@@ -3,6 +3,8 @@
     <string name="menu">Menu</string>
 
     <!--Navigation-->
+    <string name="navigate_back">Navigate back</string>
+
     <string name="lamp_control">Lamp control</string>
     <string name="connection">Connection</string>
     <string name="app_settings">App settings</string>
@@ -12,4 +14,17 @@
     <string name="turn_off_timer">Turn of timer</string>
     <string name="drawing">Drawing</string>
     <string name="language">Language</string>
+
+    <!--LampControlScreen-->
+    <string name="lamp_power">Power</string>
+    <string name="cycle_state">Cycle</string>
+    <string name="brightness">Brightness</string>
+    <string name="speed">Speed</string>
+    <string name="scale">Scale</string>
+    <string name="color">Color</string>
+
+    <string name="apply_changes">Apply changes</string>
+    <string name="lamp_connected">Lamp connected</string>
+    <string name="lamp_connection_failed">Lamp connection failed</string>
+    <string name="lamp_connection_unknown">Lamp connection unknown</string>
 </resources>
