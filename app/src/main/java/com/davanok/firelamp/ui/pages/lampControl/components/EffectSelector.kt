@@ -1,5 +1,6 @@
 package com.davanok.firelamp.ui.pages.lampControl.components
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -25,27 +26,29 @@ fun EffectSelector(
 ) {
     var dropdownMenuExpanded by remember { mutableStateOf(false) }
 
-    AssistChip(
-        modifier = modifier,
-        onClick = { dropdownMenuExpanded = !dropdownMenuExpanded },
-        label = { Text(text = currentEffect.name) },
-        trailingIcon = {
-            ExposedDropdownMenuDefaults.TrailingIcon(dropdownMenuExpanded)
-        }
-    )
+    Box {
+        AssistChip(
+            modifier = modifier,
+            onClick = { dropdownMenuExpanded = !dropdownMenuExpanded },
+            label = { Text(text = currentEffect.name) },
+            trailingIcon = {
+                ExposedDropdownMenuDefaults.TrailingIcon(dropdownMenuExpanded)
+            }
+        )
 
-    DropdownMenu(
-        expanded = dropdownMenuExpanded,
-        onDismissRequest = { dropdownMenuExpanded = false }
-    ) {
-        availableEffects.fastForEach { item ->
-            DropdownMenuItem(
-                text = { Text(text = item.name) },
-                onClick = {
-                    onEffectChange(item)
-                    dropdownMenuExpanded = false
-                }
-            )
+        DropdownMenu(
+            expanded = dropdownMenuExpanded,
+            onDismissRequest = { dropdownMenuExpanded = false }
+        ) {
+            availableEffects.fastForEach { item ->
+                DropdownMenuItem(
+                    text = { Text(text = item.name) },
+                    onClick = {
+                        onEffectChange(item)
+                        dropdownMenuExpanded = false
+                    }
+                )
+            }
         }
     }
 }

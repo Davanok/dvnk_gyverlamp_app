@@ -11,15 +11,17 @@ import com.davanok.firelamp.data.repositories.DataStoreRepository
 import com.davanok.firelamp.data.repositories.FavouritesRepository
 import com.davanok.firelamp.data.repositories.LampControlRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.lastOrNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlin.math.roundToInt
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -33,6 +35,8 @@ class LampControlViewModel @Inject constructor(
     private val _appConfig = dataStoreRepository.subscribeToPreferences()
     private var defaultTimeout: Duration = 1.seconds
     private val _uiState = MutableStateFlow(LampControlUiState())
+
+    private var loadJob: Job? = null
 
     val uiState: StateFlow<LampControlUiState> = combine(
         _appConfig,
@@ -49,14 +53,31 @@ class LampControlViewModel @Inject constructor(
         initialValue = LampControlUiState()
     )
 
+    private fun safeNormalize(value: UByte, min: UByte, max: UByte): Float {
+        val span = (max - min).toInt()
+        return if (span == 0) 0f
+        else ((value - min).toFloat() / span).coerceIn(0f, 1f)
+    }
+
+    private fun normalizedToUByte(normalized: Float, min: UByte, max: UByte): UByte {
+        val min = min.toInt()
+        val max = max.toInt()
+
+        val span = (max - min)
+        val raw = if (span == 0) min
+        else (min + (normalized.coerceIn(0f, 1f) * span)).roundToInt()
+        return raw.coerceIn(min, max).toUByte()
+    }
+
+
     private fun handleLampState(lampState: LampState) {
         _uiState.update {
             val currentEffect = it.lampAvailableEffects
                 .getOrElse(lampState.effectId.toInt()) { LampEffect.Default }
 
-            val brightness = (lampState.brightness.toFloat() / 255).coerceIn(0f, 1f)
-            val speed = ((lampState.speed - currentEffect.minSpeed).toFloat() / (currentEffect.maxSpeed - currentEffect.minSpeed).toFloat()).coerceIn(0f, 1f)
-            val scale = ((lampState.scale - currentEffect.minScale).toFloat() / (currentEffect.maxScale - currentEffect.minScale).toFloat()).coerceIn(0f, 1f)
+            val brightness = safeNormalize(lampState.brightness, 0.toUByte(), 255.toUByte())
+            val speed = safeNormalize(lampState.speed, currentEffect.minSpeed, currentEffect.maxSpeed)
+            val scale = safeNormalize(lampState.scale, currentEffect.minScale, currentEffect.maxScale)
 
             it.copy(
                 lampPowerOn = lampState.powerOn,
@@ -70,11 +91,7 @@ class LampControlViewModel @Inject constructor(
     }
 
     private fun handleFavouriteConfig(config: FavouriteConfig) {
-        _uiState.update {
-            it.copy(
-                lampCycleEnabled = config.cycleEnabled
-            )
-        }
+        _uiState.update { it.copy(lampCycleEnabled = config.cycleEnabled) }
     }
 
     private fun Result<LampState>.handleLampStateResponse() =
@@ -93,22 +110,15 @@ class LampControlViewModel @Inject constructor(
             _uiState.update { it.copy(lampConnected = false) }
         }
 
-    private fun loadLampData() = viewModelScope.launch {
-        val lampAddress = uiState.value.currentLampAddress
+    private suspend fun loadLampData(lampAddress: LampAddress) {
         val timeout = defaultTimeout
 
         controlRepository.getEffectsList(lampAddress, timeout)
             .onSuccess { effects ->
-                _uiState.update {
-                    it.copy(
-                        lampConnected = true,
-                        lampAvailableEffects = effects
-                    )
-                }
+                _uiState.update { it.copy(lampConnected = true, lampAvailableEffects = effects) }
             }.onFailure {
-                _uiState.update {
-                    it.copy(lampConnected = false)
-                }
+                _uiState.update { it.copy(lampConnected = false) }
+                return
             }
 
         controlRepository
@@ -126,104 +136,90 @@ class LampControlViewModel @Inject constructor(
                 handleLampState(lampState)
             }
             .onFailure {
-                _uiState.update {
-                    it.copy(
-                        lampConnected = false,
-                    )
-                }
+                _uiState.update { it.copy(lampConnected = false) }
             }
     }
 
-    init {
-        loadLampData()
+    private fun safeLoadLampData(lampAddress: LampAddress) {
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch { loadLampData(lampAddress) }
     }
+
+    init {
+        viewModelScope.launch {
+            val config = _appConfig.first()
+            safeLoadLampData(config.latestLampAddress)
+        }
+    }
+
+    /* ---------- Public API ---------- */
 
     fun setCurrentLamp(lampAddress: LampAddress) = viewModelScope.launch {
         dataStoreRepository.updatePreferences {
-            it.copy(
-                latestLampAddress = lampAddress
-            )
+            it.copy(latestLampAddress = lampAddress)
         }
-
-        loadLampData()
+        safeLoadLampData(lampAddress)
     }
 
     fun setLampPowerOn(powerOn: Boolean) = viewModelScope.launch {
         val lampAddress = uiState.value.currentLampAddress
         val result = if (powerOn)
-            controlRepository.turnOnLamp(
-                lampAddress = lampAddress,
-                timeout = defaultTimeout
-            )
+            controlRepository.turnOnLamp(lampAddress = lampAddress, timeout = defaultTimeout)
         else
-            controlRepository.turnOffLamp(
-                lampAddress = lampAddress,
-                timeout = defaultTimeout
-            )
+            controlRepository.turnOffLamp(lampAddress = lampAddress, timeout = defaultTimeout)
 
         result.handleLampStateResponse()
     }
 
     fun setCycleEnabled(enabled: Boolean) = viewModelScope.launch {
         val lampAddress = uiState.value.currentLampAddress
-        favouritesRepository.updateConfig(
-            lampAddress = lampAddress,
-            timeout = defaultTimeout
-        ) {
+        favouritesRepository.updateConfig(lampAddress = lampAddress, timeout = defaultTimeout) {
             it.copy(cycleEnabled = enabled)
         }.handleFavouritesConfigResponse()
     }
 
     fun setLampEffect(effect: LampEffect) = viewModelScope.launch {
         val lampAddress = uiState.value.currentLampAddress
-        controlRepository.setEffect(
-            lampAddress = lampAddress,
-            timeout = defaultTimeout,
-            effectId = effect.id
-        ).handleLampStateResponse()
+        controlRepository.setEffect(lampAddress = lampAddress, timeout = defaultTimeout, effectId = effect.id)
+            .handleLampStateResponse()
     }
 
     fun setLampBrightness(brightness: Float) = viewModelScope.launch {
-        _uiState.update { it.copy(lampBrightness = brightness) }
-        val brightnessInRange = (255 * brightness).toInt().coerceIn(0, 255).toUByte()
-        val lampAddress = uiState.value.currentLampAddress
-        controlRepository.setBrightness(
-            lampAddress = lampAddress,
-            timeout = defaultTimeout,
-            value = brightnessInRange
-        ).handleLampStateResponse()
+        val ui = uiState.value
+        _uiState.update { it.copy(lampBrightness = brightness.coerceIn(0f, 1f)) }
+
+        val lampAddress = ui.currentLampAddress
+
+        val brightnessInRange = normalizedToUByte(brightness, 0.toUByte(), 255.toUByte())
+        controlRepository.setBrightness(lampAddress = lampAddress, timeout = defaultTimeout, value = brightnessInRange)
+            .handleLampStateResponse()
     }
+
     fun setLampSpeed(speed: Float) = viewModelScope.launch {
-        _uiState.update { it.copy(lampSpeed = speed) }
-        val uiStateSnapshot = uiState.value
-        val lampAddress = uiStateSnapshot.currentLampAddress
-        val currentEffect = uiStateSnapshot.lampCurrentEffect
+        val ui = uiState.value
+        _uiState.update { it.copy(lampSpeed = speed.coerceIn(0f, 1f)) }
 
-        val speedRaw = currentEffect.minSpeed.toInt() + speed * (currentEffect.maxSpeed - currentEffect.minSpeed).toInt()
+        val lampAddress = ui.currentLampAddress
+        val currentEffect = ui.lampCurrentEffect
 
-        val speedInRange = speedRaw.toInt().coerceIn(0, 255).toUByte()
-        controlRepository.setSpeed(
-            lampAddress = lampAddress,
-            timeout = defaultTimeout,
-            value = speedInRange
-        ).handleLampStateResponse()
+        val speedInRange = normalizedToUByte(speed, currentEffect.minSpeed, currentEffect.maxSpeed)
+        controlRepository.setSpeed(lampAddress = lampAddress, timeout = defaultTimeout, value = speedInRange)
+            .handleLampStateResponse()
     }
+
     fun setLampScale(scale: Float) = viewModelScope.launch {
-        _uiState.update { it.copy(lampScale = scale) }
-        val uiStateSnapshot = uiState.value
-        val lampAddress = uiStateSnapshot.currentLampAddress
-        val currentEffect = uiStateSnapshot.lampCurrentEffect
+        val ui = uiState.value
+        _uiState.update { it.copy(lampScale = scale.coerceIn(0f, 1f)) }
 
-        val scaleRaw = currentEffect.minScale.toInt() + scale * (currentEffect.maxScale - currentEffect.minScale).toInt()
+        val lampAddress = ui.currentLampAddress
+        val currentEffect = ui.lampCurrentEffect
 
-        val scaleInRange = scaleRaw.toInt().coerceIn(0, 255).toUByte()
-        controlRepository.setScale(
-            lampAddress = lampAddress,
-            timeout = defaultTimeout,
-            value = scaleInRange
-        ).handleLampStateResponse()
+        val scaleInRange = normalizedToUByte(scale, currentEffect.minScale, currentEffect.maxScale)
+        controlRepository.setScale(lampAddress = lampAddress, timeout = defaultTimeout, value = scaleInRange)
+            .handleLampStateResponse()
     }
 }
+
 data class LampControlUiState(
     val lampConnected: Boolean = false,
     val currentLampAddress: LampAddress = LampAddress.Hotspot,
