@@ -14,4 +14,16 @@ data class LampEffect(
     val minScale: UByte,
     val maxScale: UByte,
     val colorSelect: ColorSelectType
-)
+) {
+    companion object {
+        val Default = LampEffect(
+            0.toUByte(),
+            "None",
+            UByte.MIN_VALUE,
+            UByte.MAX_VALUE,
+            UByte.MIN_VALUE,
+            UByte.MAX_VALUE,
+            ColorSelectType.NO
+        )
+    }
+}

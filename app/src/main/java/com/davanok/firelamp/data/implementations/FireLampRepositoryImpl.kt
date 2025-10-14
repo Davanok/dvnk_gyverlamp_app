@@ -1,5 +1,6 @@
 package com.davanok.firelamp.data.implementations
 
+import android.util.Log
 import com.davanok.firelamp.data.model.LampAddress
 import com.davanok.firelamp.data.model.toSocketAddress
 import com.davanok.firelamp.data.repositories.FireLampRepository
@@ -22,6 +23,7 @@ class FireLampRepositoryImpl: FireLampRepository {
         command: String,
         timeout: Duration
     ): Result<String> = runLogging("sendCommand") {
+        Log.d("FireLampRepositoryImpl", "address=$address; command=$command; timeout=$timeout")
         aSocket(selector).udp().bind().use { socket ->
             val packet = buildPacket { writeText(command) }
             socket.send(Datagram(packet, address.toSocketAddress()))

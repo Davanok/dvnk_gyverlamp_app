@@ -1,7 +1,7 @@
 package com.davanok.firelamp.data.model
 
 data class FavouriteConfig(
-    val enabled: Boolean,
+    val cycleEnabled: Boolean,
     val interval: UShort,
     val dispersion: UShort,
     val useFavourites: Boolean,
@@ -13,7 +13,7 @@ data class FavouriteConfig(
 
         other as FavouriteConfig
 
-        if (enabled != other.enabled) return false
+        if (cycleEnabled != other.cycleEnabled) return false
         if (useFavourites != other.useFavourites) return false
         if (interval != other.interval) return false
         if (dispersion != other.dispersion) return false
@@ -23,7 +23,7 @@ data class FavouriteConfig(
     }
 
     override fun hashCode(): Int {
-        var result = enabled.hashCode()
+        var result = cycleEnabled.hashCode()
         result = 31 * result + useFavourites.hashCode()
         result = 31 * result + interval.hashCode()
         result = 31 * result + dispersion.hashCode()

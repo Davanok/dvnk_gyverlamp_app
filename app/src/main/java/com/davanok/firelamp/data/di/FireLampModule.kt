@@ -15,7 +15,6 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import io.ktor.network.sockets.InetSocketAddress
 import javax.inject.Singleton
 
 @Module
@@ -36,22 +35,17 @@ object FireLampModule {
     @Provides
     @Singleton
     fun provideFavouritesRepository(
-        repository: FireLampRepository,
+        repository: FireLampRepository
     ): FavouritesRepository {
-        val address = InetSocketAddress("19.168.31.83", 8888) // TODO
-
-        return FavouritesRepositoryImpl(address, repository)
+        return FavouritesRepositoryImpl(repository)
     }
 
     @Provides
     @Singleton
     fun provideLampControlRepository(
-        repository: FireLampRepository,
-        favouritesRepository: FavouritesRepository
+        repository: FireLampRepository
     ): LampControlRepository {
-        val address = InetSocketAddress("19.168.31.83", 8888) // TODO
-
-        return LampControlRepositoryImpl(address, repository, favouritesRepository)
+        return LampControlRepositoryImpl(repository)
     }
 
 }
