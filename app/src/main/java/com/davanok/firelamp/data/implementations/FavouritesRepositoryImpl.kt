@@ -22,21 +22,21 @@ class FavouritesRepositoryImpl(
         lampAddress: LampAddress,
         timeout: Duration,
         config: FavouriteConfig
-    ): Result<Unit> =
+    ): Result<FavouriteConfig> =
         repository.sendCommand(
             lampAddress,
             "FAV_SET ${serializeFavouritesConfig(config)}",
             timeout
-        ).map { }
+        ).mapCatching { parseFavouritesConfig(it) }
 
     override suspend fun updateConfig(
         lampAddress: LampAddress,
         timeout: Duration,
-        block: (FavouriteConfig) -> FavouriteConfig
-    ): Result<Unit> =
-        runCatching {
-            val config = getFavouritesConfig(lampAddress, timeout).getOrThrow()
-            val updated = block(config)
-            setFavouritesConfig(lampAddress, timeout, updated)
-        }
+        transform: (FavouriteConfig) -> FavouriteConfig
+    ): Result<FavouriteConfig> =
+        getFavouritesConfig(lampAddress, timeout)
+            .map(transform)
+            .mapCatching { updated ->
+                setFavouritesConfig(lampAddress, timeout, updated).getOrThrow()
+            }
 }

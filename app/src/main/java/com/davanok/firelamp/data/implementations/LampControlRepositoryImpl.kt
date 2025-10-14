@@ -19,17 +19,17 @@ class LampControlRepositoryImpl(
         repository.sendCommand(lampAddress, "GET", timeout)
             .mapCatching { parseLampState(it) }
 
-    override suspend fun turnOnLamp(lampAddress: LampAddress, timeout: Duration): Result<Unit> =
+    override suspend fun turnOnLamp(lampAddress: LampAddress, timeout: Duration): Result<LampState> =
         repository.sendCommand(
             lampAddress,
             "P_ON", timeout
-        ).map { }
+        ).mapCatching { parseLampState(it) }
 
-    override suspend fun turnOffLamp(lampAddress: LampAddress, timeout: Duration): Result<Unit> =
+    override suspend fun turnOffLamp(lampAddress: LampAddress, timeout: Duration): Result<LampState> =
         repository.sendCommand(
             lampAddress,
             "P_OFF", timeout
-        ).map { }
+        ).mapCatching { parseLampState(it) }
 
     override suspend fun getEffectsList(
         lampAddress: LampAddress,
@@ -55,48 +55,48 @@ class LampControlRepositoryImpl(
         lampAddress: LampAddress,
         timeout: Duration,
         effectId: UByte
-    ): Result<Unit> = repository.sendCommand(
+    ): Result<LampState> = repository.sendCommand(
         lampAddress,
         "EFF$effectId",
         timeout
-    ).map { }
+    ).mapCatching { parseLampState(it) }
 
     override suspend fun setBrightness(
         lampAddress: LampAddress,
         timeout: Duration,
         value: UByte
-    ): Result<Unit> = repository.sendCommand(
+    ): Result<LampState> = repository.sendCommand(
         lampAddress,
         "BRI$value",
         timeout
-    ).map { }
+    ).mapCatching { parseLampState(it) }
 
     override suspend fun setSpeed(
         lampAddress: LampAddress,
         timeout: Duration,
         value: UByte
-    ): Result<Unit> = repository.sendCommand(
+    ): Result<LampState> = repository.sendCommand(
         lampAddress,
         "SPD$value",
         timeout
-    ).map { }
+    ).mapCatching { parseLampState(it) }
 
     override suspend fun setScale(
         lampAddress: LampAddress,
         timeout: Duration,
         value: UByte
-    ): Result<Unit> = repository.sendCommand(
+    ): Result<LampState> = repository.sendCommand(
         lampAddress,
         "SCA$value",
         timeout
-    ).map { }
+    ).mapCatching { parseLampState(it) }
 
-    override suspend fun setDefault(lampAddress: LampAddress, timeout: Duration): Result<Unit> =
+    override suspend fun setDefault(lampAddress: LampAddress, timeout: Duration): Result<LampState> =
         repository.sendCommand(
             lampAddress,
             "RND_0",
             timeout
-        ).map { }
+        ).mapCatching { parseLampState(it) }
 
     override suspend fun setRandom(lampAddress: LampAddress, timeout: Duration): Result<Unit> =
         repository.sendCommand(
