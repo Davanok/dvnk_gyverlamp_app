@@ -13,6 +13,8 @@ data class LampAddress(
         return parts.size == 4 && parts.all { it.toUByteOrNull() != null }
     }
 
+    fun getName() = hostname
+
     companion object {
         val Hotspot = LampAddress("192.168.4.1", 8888)
         val Unknown = LampAddress("0.0.0.0", 8888)

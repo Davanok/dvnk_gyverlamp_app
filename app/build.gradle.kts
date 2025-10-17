@@ -69,6 +69,8 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     implementation(libs.androidx.material.icons)
 
+    implementation(libs.androidx.lifecycle.viewmodel.navigation3)
+
     implementation(libs.serialization.json)
 
     implementation(libs.dagger.hilt.android)
@@ -81,4 +83,8 @@ dependencies {
     implementation(libs.androidx.navigation3.ui)
 
     implementation(libs.androidx.datastore)
+
+    implementation(libs.androidx.compose.material3.adaptive)
+    implementation(libs.androidx.compose.material3.adaptive.layout)
+    implementation(libs.androidx.compose.material3.adaptive.navigation3)
 }

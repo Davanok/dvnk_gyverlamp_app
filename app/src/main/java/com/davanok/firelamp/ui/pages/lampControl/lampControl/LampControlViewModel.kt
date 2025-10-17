@@ -1,4 +1,4 @@
-package com.davanok.firelamp.ui.pages.lampControl
+package com.davanok.firelamp.ui.pages.lampControl.lampControl
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -29,7 +29,7 @@ import kotlin.time.Duration.Companion.seconds
 class LampControlViewModel @Inject constructor(
     private val controlRepository: LampControlRepository,
     private val favouritesRepository: FavouritesRepository,
-    private val dataStoreRepository: DataStoreRepository
+    dataStoreRepository: DataStoreRepository
 ) : ViewModel() {
 
     private val _appConfig = dataStoreRepository.subscribeToPreferences()
@@ -45,7 +45,6 @@ class LampControlViewModel @Inject constructor(
         defaultTimeout = appConfig.defaultTimeout
         state.copy(
             currentLampAddress = appConfig.latestLampAddress,
-            availableLampAddresses = appConfig.savedLampAddresses
         )
     }.stateIn(
         scope = viewModelScope,
@@ -154,13 +153,6 @@ class LampControlViewModel @Inject constructor(
 
     /* ---------- Public API ---------- */
 
-    fun setCurrentLamp(lampAddress: LampAddress) = viewModelScope.launch {
-        dataStoreRepository.updatePreferences {
-            it.copy(latestLampAddress = lampAddress)
-        }
-        safeLoadLampData(lampAddress)
-    }
-
     fun setLampPowerOn(powerOn: Boolean) = viewModelScope.launch {
         val lampAddress = uiState.value.currentLampAddress
         val result = if (powerOn)
@@ -218,12 +210,28 @@ class LampControlViewModel @Inject constructor(
         controlRepository.setScale(lampAddress = lampAddress, timeout = defaultTimeout, value = scaleInRange)
             .handleLampStateResponse()
     }
+
+    fun setDefaultValues() = viewModelScope.launch {
+        val ui = uiState.value
+        val lampAddress = ui.currentLampAddress
+
+        controlRepository.setDefault(lampAddress = lampAddress, timeout = defaultTimeout)
+            .handleLampStateResponse()
+    }
+    fun setRandomValues() = viewModelScope.launch {
+        val ui = uiState.value
+        val lampAddress = ui.currentLampAddress
+
+        controlRepository.setRandom(lampAddress = lampAddress, timeout = defaultTimeout)
+
+        controlRepository.getLampState(lampAddress = lampAddress, timeout = defaultTimeout)
+            .handleLampStateResponse()
+    }
 }
 
 data class LampControlUiState(
     val lampConnected: Boolean = false,
     val currentLampAddress: LampAddress = LampAddress.Hotspot,
-    val availableLampAddresses: List<LampAddress> = listOf(LampAddress.Hotspot),
     val lampPowerOn: Boolean = false,
     val lampCycleEnabled: Boolean = false,
     val lampCurrentEffect: LampEffect = LampEffect.Default,
