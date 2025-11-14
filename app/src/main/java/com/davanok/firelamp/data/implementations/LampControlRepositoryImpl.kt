@@ -19,17 +19,15 @@ class LampControlRepositoryImpl(
         repository.sendCommand(lampAddress, "GET", timeout)
             .mapCatching { parseLampState(it) }
 
-    override suspend fun turnOnLamp(lampAddress: LampAddress, timeout: Duration): Result<LampState> =
-        repository.sendCommand(
-            lampAddress,
-            "P_ON", timeout
-        ).mapCatching { parseLampState(it) }
-
-    override suspend fun turnOffLamp(lampAddress: LampAddress, timeout: Duration): Result<LampState> =
-        repository.sendCommand(
-            lampAddress,
-            "P_OFF", timeout
-        ).mapCatching { parseLampState(it) }
+    override suspend fun setLampPowerOn(
+        lampAddress: LampAddress,
+        timeout: Duration,
+        setPowerOn: Boolean
+    ) = repository.sendCommand(
+        lampAddress,
+        if (setPowerOn) "P_ON" else "P_OFF",
+        timeout
+    ).mapCatching { parseLampState(it) }
 
     override suspend fun getEffectsList(
         lampAddress: LampAddress,

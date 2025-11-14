@@ -5,15 +5,21 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.SignalWifiConnectedNoInternet4
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.davanok.firelamp.R
 import com.davanok.firelamp.data.model.LampAddress
 
 
@@ -27,43 +33,56 @@ fun LampsListScreen(
     LaunchedEffect(uiState.availableLampAddresses) {
         if (uiState.availableLampAddresses.size == 1) {
             val lamp = uiState.availableLampAddresses.first()
-            viewModel.setCurrentLamp(lamp)
-            onLampChange(lamp)
+            viewModel.setCurrentLamp(lamp.address)
+            onLampChange(lamp.address)
         }
     }
 
     Content(
         currentLampAddress = uiState.currentLampAddress,
-        availableLampAddresses = uiState.availableLampAddresses,
+        availableLamps = uiState.availableLampAddresses,
         onLampChange = {
             viewModel.setCurrentLamp(it)
             onLampChange(it)
-        }
+        },
+        setLampPower = viewModel::setLampPower,
+        modifier = Modifier.fillMaxSize()
     )
 }
 
 @Composable
 private fun Content(
     currentLampAddress: LampAddress,
-    availableLampAddresses: List<LampAddress>,
-    onLampChange: (LampAddress) -> Unit
+    availableLamps: List<LampsListUiState.ListLampState>,
+    onLampChange: (LampAddress) -> Unit,
+    setLampPower: (LampAddress, Boolean) -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    LazyColumn(
-        modifier = Modifier.fillMaxSize()
-    ) {
+    LazyColumn(modifier = modifier) {
         items(
-            items = availableLampAddresses,
-            key = { it.hostname }
-        ) { lampAddress ->
+            items = availableLamps,
+            key = { it.address.hostname }
+        ) { lamp ->
             HorizontalDivider(Modifier.fillMaxWidth())
             ListItem(
                 modifier = Modifier
                     .fillMaxWidth()
                     .selectable(
-                        selected = currentLampAddress == lampAddress,
-                        onClick = { onLampChange(lampAddress) }
+                        selected = currentLampAddress == lamp,
+                        onClick = { onLampChange(lamp.address) }
                     ),
-                headlineContent = { Text(text = lampAddress.getName()) }
+                headlineContent = { Text(text = lamp.address.getName()) },
+                trailingContent = {
+                    if (!lamp.connected)
+                        Icon(
+                            imageVector = Icons.Default.SignalWifiConnectedNoInternet4,
+                            contentDescription = stringResource(R.string.lamp_connection_failed)
+                        )
+                    else Switch(
+                        checked = lamp.isPowerOn,
+                        onCheckedChange = { setLampPower(lamp.address, it) }
+                    )
+                }
             )
         }
     }

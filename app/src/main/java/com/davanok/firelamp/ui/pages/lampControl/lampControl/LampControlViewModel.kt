@@ -155,10 +155,8 @@ class LampControlViewModel @Inject constructor(
 
     fun setLampPowerOn(powerOn: Boolean) = viewModelScope.launch {
         val lampAddress = uiState.value.currentLampAddress
-        val result = if (powerOn)
-            controlRepository.turnOnLamp(lampAddress = lampAddress, timeout = defaultTimeout)
-        else
-            controlRepository.turnOffLamp(lampAddress = lampAddress, timeout = defaultTimeout)
+        val result =
+            controlRepository.setLampPowerOn(lampAddress, defaultTimeout, powerOn)
 
         result.handleLampStateResponse()
     }

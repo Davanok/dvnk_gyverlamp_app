@@ -46,7 +46,7 @@ import kotlinx.coroutines.launch
 
 
 private enum class MenuNavigation(
-    @StringRes val title: Int,
+    @field:StringRes val title: Int,
     val icon: ImageVector,
     val route: NavKey
 ) {

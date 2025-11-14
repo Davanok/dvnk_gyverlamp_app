@@ -8,8 +8,7 @@ import kotlin.time.Duration
 interface LampControlRepository {
     suspend fun getLampState(lampAddress: LampAddress, timeout: Duration): Result<LampState>
 
-    suspend fun turnOnLamp(lampAddress: LampAddress, timeout: Duration): Result<LampState>
-    suspend fun turnOffLamp(lampAddress: LampAddress, timeout: Duration): Result<LampState>
+    suspend fun setLampPowerOn(lampAddress: LampAddress, timeout: Duration, setPowerOn: Boolean): Result<LampState>
 
     suspend fun getEffectsList(lampAddress: LampAddress, timeout: Duration): Result<List<LampEffect>>
     suspend fun setEffect(lampAddress: LampAddress, timeout: Duration, effectId: UByte): Result<LampState>
