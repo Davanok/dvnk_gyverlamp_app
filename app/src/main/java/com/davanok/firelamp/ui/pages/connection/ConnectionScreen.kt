@@ -1,5 +1,6 @@
 package com.davanok.firelamp.ui.pages.connection
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -12,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardActions
@@ -26,11 +26,10 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.QuestionMark
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.ButtonGroupDefaults
+import androidx.compose.material3.Card
 import androidx.compose.material3.CircularWavyProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -40,8 +39,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -50,11 +51,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.davanok.firelamp.R
@@ -76,9 +82,12 @@ fun ConnectionScreen(
         savedLampsList = uiState.savedLampsList,
         onDeleteLamp = viewModel::deleteLampAddress,
         onUpdateLamp = viewModel::updateLampAddress,
-        onCancel = viewModel::cancelEditLamp,
+        onCancelEditLamp = viewModel::cancelEditLamp,
         currentLampAddress = uiState.editLampAddress,
-        onSavedLampClick = viewModel::setCurrentLamp
+        onSavedLampClick = viewModel::setCurrentLamp,
+        searchLampsPort = uiState.searchLampsPort,
+        onSearchPortChange = viewModel::setSearchPort,
+        onFoundedLampClick = viewModel::saveAndSetCurrentLamp
     )
 }
 
@@ -86,9 +95,12 @@ fun ConnectionScreen(
 @Composable
 private fun Content(
     currentLampAddress: LampAddress?,
+    onFoundedLampClick: (LampAddress) -> Unit,
     onSavedLampClick: (LampAddress) -> Unit,
     onFindLamps: () -> Unit,
     findLampProgress: Float?,
+    searchLampsPort: Int,
+    onSearchPortChange: (Int) -> Unit,
     onCheckConnection: (LampAddress) -> Unit,
     lampConnected: Boolean?,
     checkConnectionInProgress: Boolean,
@@ -96,8 +108,10 @@ private fun Content(
     savedLampsList: List<LampAddress>,
     onDeleteLamp: (LampAddress) -> Unit,
     onUpdateLamp: (LampAddress) -> Unit,
-    onCancel: () -> Unit
+    onCancelEditLamp: () -> Unit
 ) {
+    BackHandler(enabled = currentLampAddress != null, onBack = onCancelEditLamp)
+
     Column(
         modifier = Modifier.fillMaxSize()
     ) {
@@ -113,7 +127,7 @@ private fun Content(
             EditLampAddress(
                 currentLampAddress = currentLampAddress,
                 onUpdate = onUpdateLamp,
-                onCancel = onCancel,
+                onCancel = onCancelEditLamp,
                 modifier = Modifier.padding(horizontal = 8.dp)
             )
 
@@ -122,10 +136,13 @@ private fun Content(
         LampsListContent(
             onFindLamps = onFindLamps,
             findLampProgress = findLampProgress,
+            searchLampsPort = searchLampsPort,
+            onSearchPortChange = onSearchPortChange,
             foundedLampsList = foundedLampsList,
             savedLampsList = savedLampsList,
             onDeleteLamp = onDeleteLamp,
-            onClickSavedLamp = onSavedLampClick,
+            onFoundedLampClick = onFoundedLampClick,
+            onSavedLampClick = onSavedLampClick,
             modifier = Modifier.fillMaxWidth()
         )
     }
@@ -189,34 +206,33 @@ private fun NewAddressInputField(
         )
 
         Row(
-            horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween)
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            FilledIconButton(
-                onClick = { builtLampAddress?.let { checkConnection(it) } },
-                enabled = builtLampAddress != null,
-                shape = ButtonGroupDefaults.connectedLeadingButtonShape
-            ) {
-                if (checkConnectionInProgress) CircularWavyProgressIndicator(modifier = Modifier.size(24.dp))
-                else when(lampConnected) {
-                    true -> Icon(
-                        imageVector = Icons.Default.Check,
-                        contentDescription = stringResource(R.string.lamp_connected_icon)
-                    )
-                    false -> Icon(
-                        imageVector = Icons.Default.ErrorOutline,
-                        contentDescription = stringResource(R.string.lamp_connection_failed_icon)
-                    )
-                    null -> Icon(
-                        imageVector = Icons.Default.QuestionMark,
-                        contentDescription = stringResource(R.string.lamp_connection_unknown_icon)
-                    )
+            if (checkConnectionInProgress) CircularWavyProgressIndicator()
+            else
+                IconButton(
+                    onClick = { builtLampAddress?.let { checkConnection(it) } },
+                    enabled = builtLampAddress != null,
+                ) {
+                    when(lampConnected) {
+                        true -> Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = stringResource(R.string.lamp_connected_icon)
+                        )
+                        false -> Icon(
+                            imageVector = Icons.Default.ErrorOutline,
+                            contentDescription = stringResource(R.string.lamp_connection_failed_icon)
+                        )
+                        null -> Icon(
+                            imageVector = Icons.Default.QuestionMark,
+                            contentDescription = stringResource(R.string.lamp_connection_unknown_icon)
+                        )
+                    }
                 }
-            }
 
-            FilledIconButton(
+            IconButton(
                 onClick = { builtLampAddress?.let { addWithoutCheck(it) } },
-                enabled = builtLampAddress != null,
-                shape = ButtonGroupDefaults.connectedTrailingButtonShape
+                enabled = builtLampAddress != null
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
@@ -294,28 +310,39 @@ private fun EditLampAddress(
 private fun LampsListContent(
     onFindLamps: () -> Unit,
     findLampProgress: Float?,
+    searchLampsPort: Int,
+    onSearchPortChange: (Int) -> Unit,
     foundedLampsList: List<LampAddress>,
     savedLampsList: List<LampAddress>,
     onDeleteLamp: (LampAddress) -> Unit,
-    onClickSavedLamp: (LampAddress) -> Unit,
+    onFoundedLampClick: (LampAddress) -> Unit,
+    onSavedLampClick: (LampAddress) -> Unit,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
         modifier = modifier
     ) {
         stickyHeader {
-            FoundedLampsHeader(
-                onFindLamps = onFindLamps,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp)
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-            )
-            if (findLampProgress != null)
-                LinearWavyProgressIndicator(
-                    progress = { findLampProgress },
-                    modifier = Modifier.fillMaxWidth()
+            Column {
+                FoundedLampsHeader(
+                    onFindLamps = onFindLamps,
+                    isSearchInProgress = findLampProgress != null,
+                    searchLampsPort = searchLampsPort,
+                    onSearchPortChange = onSearchPortChange,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp)
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
                 )
+                AnimatedVisibility(
+                    visible = findLampProgress != null
+                ) {
+                    LinearWavyProgressIndicator(
+                        progress = { findLampProgress ?: 0f },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
         }
         if (foundedLampsList.isEmpty())
             item {
@@ -331,6 +358,7 @@ private fun LampsListContent(
                 key = { "founded: ${it.hostname}" }
             ) { address ->
                 ListItem(
+                    modifier = Modifier.clickable { onFoundedLampClick(address) },
                     headlineContent = {
                         Text(text = address.getDisplayName())
                     }
@@ -362,7 +390,7 @@ private fun LampsListContent(
             SavedLampListItem(
                 address = address,
                 onDeleteLamp = onDeleteLamp,
-                onClick = onClickSavedLamp,
+                onClick = onSavedLampClick,
                 modifier = Modifier.animateItem()
             )
             HorizontalDivider(Modifier.fillMaxWidth())
@@ -373,8 +401,12 @@ private fun LampsListContent(
 @Composable
 private fun FoundedLampsHeader(
     onFindLamps: () -> Unit,
+    isSearchInProgress: Boolean,
+    searchLampsPort: Int,
+    onSearchPortChange: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var showSearchPortDialog by remember { mutableStateOf(false) }
     Box(modifier = modifier) {
         Row(
             modifier = Modifier.padding(horizontal = 8.dp),
@@ -386,16 +418,98 @@ private fun FoundedLampsHeader(
                 modifier = Modifier.weight(1f)
             )
 
-            IconButton(
-                onClick = onFindLamps
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector = Icons.Default.Refresh,
-                    contentDescription = stringResource(R.string.find_lamps)
-                )
+                TextButton(
+                    onClick = { showSearchPortDialog = !showSearchPortDialog }
+                ) {
+                    Text(
+                        text = searchLampsPort.toString()
+                    )
+                }
+
+                IconButton(
+                    onClick = onFindLamps,
+                    enabled = !isSearchInProgress
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Refresh,
+                        contentDescription = stringResource(R.string.find_lamps)
+                    )
+                }
             }
         }
     }
+
+    if (showSearchPortDialog)
+        Dialog(
+            onDismissRequest = {
+                showSearchPortDialog = false
+            }
+        ) {
+            Card {
+                val focusRequester = remember { FocusRequester() }
+                LaunchedEffect(Unit) {
+                    focusRequester.requestFocus()
+                }
+
+                var textFieldValue by remember(searchLampsPort) {
+                    val searchLampsPortStr = searchLampsPort.toString()
+                    mutableStateOf(
+                        TextFieldValue(
+                            text = searchLampsPortStr,
+                            selection = TextRange(searchLampsPortStr.length)
+                        )
+                    )
+                }
+                val onDone: () -> Unit = {
+                    textFieldValue.text.toIntOrNull()?.takeIf { it >= 0 }?.let {
+                        showSearchPortDialog = false
+                        onSearchPortChange(it)
+                    }
+                }
+
+                OutlinedTextField(
+                    modifier = Modifier
+                        .padding(vertical = 12.dp, horizontal = 16.dp)
+                        .focusRequester(focusRequester),
+                    value = textFieldValue,
+                    onValueChange = { value ->
+                        if (value.text.isEmpty())
+                            textFieldValue = TextFieldValue(
+                                text = "0",
+                                selection = TextRange(1)
+                            )
+                        value.text.toIntOrNull()?.takeIf { it >= 0 }?.let {
+                            textFieldValue = value.copy(text = it.toString())
+                        }
+                                    },
+                    keyboardActions = KeyboardActions(onDone = { onDone() }),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Number,
+                        imeAction = ImeAction.Done
+                    ),
+                    trailingIcon = {
+                        IconButton(
+                            onClick = onDone
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = null
+                            )
+                        }
+                    },
+                    label = {
+                        Text(
+                            text = stringResource(R.string.search_lamps_port),
+                            style = MaterialTheme.typography.titleLarge
+                        )
+                    }
+                )
+            }
+        }
 }
 
 @Composable

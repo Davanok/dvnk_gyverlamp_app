@@ -1,9 +1,11 @@
 package com.davanok.firelamp.ui.navigation
 
+import androidx.compose.runtime.Immutable
 import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
 
 @Serializable
+@Immutable
 object Route: NavKey {
     @Serializable data object LampControl: NavKey {
         @Serializable data object LampsList: NavKey

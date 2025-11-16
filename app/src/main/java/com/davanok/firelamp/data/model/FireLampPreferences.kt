@@ -9,5 +9,6 @@ import kotlin.time.Duration.Companion.seconds
 data class FireLampPreferences(
     val latestLampAddress: LampAddress = LampAddress.Unknown,
     val savedLampAddresses: List<LampAddress> = listOf(LampAddress.Unknown),
-    val defaultTimeout: Duration = 1.seconds
+    val defaultTimeout: Duration = 1.seconds,
+    val findTimeout: Duration = 3.seconds
 )

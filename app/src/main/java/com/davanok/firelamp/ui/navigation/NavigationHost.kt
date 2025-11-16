@@ -16,57 +16,47 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
-import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
-import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.davanok.firelamp.R
 import com.davanok.firelamp.ui.pages.connection.ConnectionScreen
 import com.davanok.firelamp.ui.pages.lampControl.lampControl.LampControlScreen
 import com.davanok.firelamp.ui.pages.lampControl.lampsList.LampsListScreen
 
-@Composable
-private fun DefaultNavigationWrapper(
-    backStack: NavBackStack<NavKey>,
-    navButtonType: NavButtonType = NavButtonType.Menu,
-    title: @Composable () -> Unit,
-    content: @Composable () -> Unit
-) {
-    NavigationDrawerScaffold(
-        currentRoute = backStack.lastOrNull(),
-        navigate = {
-            backStack.clear()
-            backStack.add(it)
-        },
-        navigateBack = backStack::removeLastOrNull,
-        title = title,
-        navButtonType = navButtonType,
-        content = content
-    )
-}
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NavigationHost() {
     val backStack = rememberNavBackStack(Route.LampControl)
+
+    val topLevelNavigate: (NavKey) -> Unit = {
+        backStack.clear()
+        backStack.addAll(listOf(Route.LampControl, it))
+    }
+    val navigateBack: () -> Unit = { backStack.removeLastOrNull() }
+
     NavDisplay(
         backStack = backStack,
-        entryDecorators = listOf(
-
-        ),
         entryProvider = entryProvider(
-            fallback = { NavEntry(Route.LampControl) { LampControlNavModule(backStack) } }
+            fallback = {
+                NavEntry(Route.LampControl) {
+                    LampControlNavModule(
+                        topLevelNavigate,
+                        navigateBack
+                    )
+                }
+            }
         ) {
-            entry<Route.LampControl> { LampControlNavModule(backStack) }
+            entry<Route.LampControl> { LampControlNavModule(topLevelNavigate, navigateBack) }
             entry<Route.Connection> {
-                DefaultNavigationWrapper(
-                    backStack = backStack,
-                    title = { Text(text = stringResource(R.string.connection)) },
+                NavigationDrawerScaffold(
+                    currentRoute = it,
+                    navigate = topLevelNavigate,
+                    navigateBack = navigateBack,
+                    title = { Text(text = stringResource(R.string.connection)) }
                 ) { ConnectionScreen() }
             }
         }
@@ -76,7 +66,8 @@ fun NavigationHost() {
 @OptIn(ExperimentalMaterial3AdaptiveApi::class)
 @Composable
 fun LampControlNavModule(
-    parentBackStack: NavBackStack<NavKey>
+    navigate: (NavKey) -> Unit,
+    navigateBack: () -> Unit
 ) {
     val backStack = rememberNavBackStack(Route.LampControl.LampsList)
     val windowAdaptiveInfo = currentWindowAdaptiveInfo()
@@ -89,10 +80,6 @@ fun LampControlNavModule(
     NavDisplay(
         backStack = backStack,
         sceneStrategy = listDetailStrategy,
-        entryDecorators = listOf(
-            rememberSaveableStateHolderNavEntryDecorator(),
-            rememberViewModelStoreNavEntryDecorator()
-        ),
         entryProvider = entryProvider {
             entry<Route.LampControl.LampsList>(
                 metadata = ListDetailSceneStrategy.listPane(
@@ -112,8 +99,10 @@ fun LampControlNavModule(
                     }
                 )
             ) {
-                DefaultNavigationWrapper(
-                    backStack = parentBackStack,
+                NavigationDrawerScaffold(
+                    currentRoute = it,
+                    navigate = navigate,
+                    navigateBack = navigateBack,
                     title = { Text(text = stringResource(R.string.lamp_control)) },
                 ) {
                     LampsListScreen(
@@ -124,8 +113,10 @@ fun LampControlNavModule(
             entry<Route.LampControl.Control>(
                 metadata = ListDetailSceneStrategy.detailPane()
             ) { key ->
-                DefaultNavigationWrapper(
-                    backStack = parentBackStack,
+                NavigationDrawerScaffold(
+                    currentRoute = key,
+                    navigate = navigate,
+                    navigateBack = navigateBack,
                     title = { Text(text = key.lampName) },
                 ) { LampControlScreen() }
             }

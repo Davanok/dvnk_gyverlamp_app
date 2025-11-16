@@ -18,6 +18,7 @@ import java.net.Inet4Address
 import java.net.InetAddress
 import java.net.NetworkInterface
 import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.time.Duration
 
 class LampsFinderRepositoryImpl(
@@ -42,7 +43,7 @@ class LampsFinderRepositoryImpl(
         val found = CopyOnWriteArrayList<LampAddress>()
 
         val total = 255
-        val completed = java.util.concurrent.atomic.AtomicInteger(0)
+        val completed = AtomicInteger(0)
 
         val concurrency = 50
         val sem = Semaphore(concurrency)

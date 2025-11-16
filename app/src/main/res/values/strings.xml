@@ -30,6 +30,8 @@
     <string name="hostname">Hostname</string>
     <string name="port">Port</string>
 
+    <string name="search_lamps_port">Search lamps port</string>
+
     <string name="hostname_invalid">Hostname invalid</string>
 
     <string name="lamp_name">Lamp name</string>

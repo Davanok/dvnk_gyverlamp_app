@@ -14,6 +14,8 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 @HiltViewModel
 class ConnectionViewModel @Inject constructor(
@@ -22,10 +24,14 @@ class ConnectionViewModel @Inject constructor(
 ) : ViewModel() {
     private val _appConfig = dataStoreRepository.subscribeToPreferences()
     private val _uiState = MutableStateFlow(ConnectionUiState())
+
+    private var findTimeout: Duration = 5.seconds
+
     val uiState: StateFlow<ConnectionUiState> = combine(
         _appConfig,
         _uiState
     ) { appConfig, state ->
+        findTimeout = appConfig.findTimeout
         state.copy(
             editLampAddress = if (state.editLampAddress == null) null else appConfig.savedLampAddresses.firstOrNull { it.hostname == state.editLampAddress.hostname },
             savedLampsList = appConfig.savedLampAddresses
@@ -45,7 +51,7 @@ class ConnectionViewModel @Inject constructor(
             else
                 savedLamps.add(address)
 
-            preferences.copy(savedLampAddresses = savedLamps)
+            preferences.copy(savedLampAddresses = savedLamps.distinctBy { it.hostname })
         }
     }
     fun cancelEditLamp() = _uiState.update {
@@ -56,7 +62,7 @@ class ConnectionViewModel @Inject constructor(
         dataStoreRepository.updatePreferences { preferences ->
             val savedLamps = preferences.savedLampAddresses
 
-            val filtered = savedLamps.filter { it.hostname == address.hostname }
+            val filtered = savedLamps.filter { it.hostname != address.hostname }
 
             preferences.copy(savedLampAddresses = filtered)
         }
@@ -65,25 +71,41 @@ class ConnectionViewModel @Inject constructor(
     fun setCurrentLamp(address: LampAddress) = _uiState.update {
         it.copy(editLampAddress = address)
     }
-
-    fun findLamps() = viewModelScope.launch {
-        lampsFinderRepository.findLamps(LampAddress.Unknown.port).collect { (progress, lamps) ->
-            _uiState.update {
-                it.copy(
-                    findLampProgress = progress,
-                    foundedLampsList = lamps
-                )
-            }
+    fun saveAndSetCurrentLamp(address: LampAddress) {
+        updateLampAddress(address).invokeOnCompletion {
+            setCurrentLamp(address)
         }
-        _uiState.update {
-            it.copy(findLampProgress = null)
+    }
+
+    fun setSearchPort(port: Int) {
+        if (port >= 0)
+            _uiState.update { it.copy(searchLampsPort = port) }
+    }
+
+    fun findLamps() {
+        if (uiState.value.findLampProgress != null) return
+        _uiState.update { it.copy(findLampProgress = 0f) }
+
+        viewModelScope.launch {
+            lampsFinderRepository.findLamps(uiState.value.searchLampsPort, timeout = findTimeout)
+                .collect { (progress, lamps) ->
+                    _uiState.update {
+                        it.copy(
+                            findLampProgress = progress,
+                            foundedLampsList = lamps
+                        )
+                    }
+                }
+            _uiState.update {
+                it.copy(findLampProgress = null)
+            }
         }
     }
 
     fun checkConnection(address: LampAddress) = viewModelScope.launch {
         _uiState.update { it.copy(checkConnectionInProgress = true) }
 
-        lampsFinderRepository.checkConnection(address)
+        lampsFinderRepository.checkConnection(address, findTimeout)
             .onFailure {
                 _uiState.update {
                     it.copy(
@@ -110,5 +132,6 @@ data class ConnectionUiState(
     val foundedLampsList: List<LampAddress> = emptyList(),
     val findLampProgress: Float? = null,
     val lampConnected: Boolean? = null,
-    val checkConnectionInProgress: Boolean = false
+    val checkConnectionInProgress: Boolean = false,
+    val searchLampsPort: Int = LampAddress.Unknown.port
 )
