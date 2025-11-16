@@ -71,7 +71,7 @@ private fun Content(
                         selected = currentLampAddress == lamp,
                         onClick = { onLampChange(lamp.address) }
                     ),
-                headlineContent = { Text(text = lamp.address.getName()) },
+                headlineContent = { Text(text = lamp.address.getDisplayName()) },
                 trailingContent = {
                     if (!lamp.connected)
                         Icon(

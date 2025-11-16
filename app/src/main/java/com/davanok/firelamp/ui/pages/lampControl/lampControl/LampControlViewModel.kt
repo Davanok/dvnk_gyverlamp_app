@@ -229,7 +229,7 @@ class LampControlViewModel @Inject constructor(
 
 data class LampControlUiState(
     val lampConnected: Boolean = false,
-    val currentLampAddress: LampAddress = LampAddress.Hotspot,
+    val currentLampAddress: LampAddress = LampAddress.Unknown,
     val lampPowerOn: Boolean = false,
     val lampCycleEnabled: Boolean = false,
     val lampCurrentEffect: LampEffect = LampEffect.Default,

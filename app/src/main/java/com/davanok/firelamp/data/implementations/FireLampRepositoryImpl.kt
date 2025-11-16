@@ -2,7 +2,7 @@ package com.davanok.firelamp.data.implementations
 
 import android.util.Log
 import com.davanok.firelamp.data.model.LampAddress
-import com.davanok.firelamp.data.model.toSocketAddress
+import com.davanok.firelamp.data.model.adapters.toSocketAddress
 import com.davanok.firelamp.data.repositories.FireLampRepository
 import com.davanok.firelamp.data.utils.runLogging
 import io.ktor.network.selector.ActorSelectorManager

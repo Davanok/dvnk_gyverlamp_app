@@ -6,10 +6,12 @@ import com.davanok.firelamp.data.implementations.DataStoreRepositoryImpl
 import com.davanok.firelamp.data.implementations.FavouritesRepositoryImpl
 import com.davanok.firelamp.data.implementations.FireLampRepositoryImpl
 import com.davanok.firelamp.data.implementations.LampControlRepositoryImpl
+import com.davanok.firelamp.data.implementations.LampsFinderRepositoryImpl
 import com.davanok.firelamp.data.repositories.DataStoreRepository
 import com.davanok.firelamp.data.repositories.FavouritesRepository
 import com.davanok.firelamp.data.repositories.FireLampRepository
 import com.davanok.firelamp.data.repositories.LampControlRepository
+import com.davanok.firelamp.data.repositories.LampsFinderRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -48,4 +50,11 @@ object FireLampModule {
         return LampControlRepositoryImpl(repository)
     }
 
+    @Provides
+    @Singleton
+    fun provideLampsFinderRepository(
+        repository: FireLampRepository
+    ): LampsFinderRepository {
+        return LampsFinderRepositoryImpl(repository)
+    }
 }

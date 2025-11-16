@@ -67,7 +67,7 @@ fun NavigationHost() {
                 DefaultNavigationWrapper(
                     backStack = backStack,
                     title = { Text(text = stringResource(R.string.connection)) },
-                ) { ConnectionScreen(onBack = backStack::removeLastOrNull) }
+                ) { ConnectionScreen() }
             }
         }
     )
@@ -117,7 +117,7 @@ fun LampControlNavModule(
                     title = { Text(text = stringResource(R.string.lamp_control)) },
                 ) {
                     LampsListScreen(
-                        onLampChange = { backStack.add(Route.LampControl.Control(it.getName())) }
+                        onLampChange = { backStack.add(Route.LampControl.Control(it.getDisplayName())) }
                     )
                 }
             }

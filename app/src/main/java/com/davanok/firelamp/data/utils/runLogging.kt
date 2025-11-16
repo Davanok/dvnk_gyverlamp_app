@@ -9,5 +9,5 @@ inline fun <T, R> T.runLogging(name: String, block: T.() -> R): Result<R> = runC
 }.onSuccess {
     Log.d(null, "success $name: $it")
 }.onFailure {
-    Log.e(null, "failed $name", it)
+    Log.w(null, "failed $name", it)
 }

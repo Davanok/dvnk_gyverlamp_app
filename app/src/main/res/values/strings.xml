@@ -26,8 +26,30 @@
     <string name="random_effect_values">Random</string>
     <string name="default_effect_values">Default</string>
 
-    <string name="apply_changes">Apply changes</string>
-    <string name="lamp_connected">Lamp connected</string>
-    <string name="lamp_connection_failed">Lamp connection failed</string>
-    <string name="lamp_connection_unknown">Lamp connection unknown</string>
+    <!--ConnectionScreen-->
+    <string name="hostname">Hostname</string>
+    <string name="port">Port</string>
+
+    <string name="hostname_invalid">Hostname invalid</string>
+
+    <string name="lamp_name">Lamp name</string>
+    <string name="update_name">Update name</string>
+    <string name="cancel_edit_lamp">Cancel edit</string>
+
+    <string name="lamp_connected_icon">Lamp connected</string>
+    <string name="lamp_connection_failed_icon">Lamp connection failed</string>
+    <string name="lamp_connection_unknown_icon">Lamp connection unknown</string>
+
+    <string name="lamp_connected">Connected</string>
+    <string name="lamp_connection_failed">Failed</string>
+    <string name="lamp_check_connection">Check</string>
+
+    <string name="saved_lamps">Saved lamps</string>
+
+    <string name="founded_lamps">Founded lamps</string>
+    <string name="find_lamps">Find lamps</string>
+    <string name="no_lamps_found">No lamps found</string>
+
+    <string name="edit_lamp">Edit lamp</string>
+    <string name="delete_lamp">Edit lamp</string>
 </resources>

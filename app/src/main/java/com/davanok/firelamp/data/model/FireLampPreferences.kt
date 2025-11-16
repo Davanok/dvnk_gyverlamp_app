@@ -7,7 +7,7 @@ import kotlin.time.Duration.Companion.seconds
 
 @Serializable
 data class FireLampPreferences(
-    val latestLampAddress: LampAddress = LampAddress.Hotspot,
-    val savedLampAddresses: List<LampAddress> = listOf(LampAddress.Hotspot),
+    val latestLampAddress: LampAddress = LampAddress.Unknown,
+    val savedLampAddresses: List<LampAddress> = listOf(LampAddress.Unknown),
     val defaultTimeout: Duration = 1.seconds
 )

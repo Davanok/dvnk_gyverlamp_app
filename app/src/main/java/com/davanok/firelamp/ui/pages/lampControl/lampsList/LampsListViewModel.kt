@@ -87,7 +87,7 @@ class LampsListViewModel @Inject constructor(
 }
 
 data class LampsListUiState(
-    val currentLampAddress: LampAddress = LampAddress.Hotspot,
+    val currentLampAddress: LampAddress = LampAddress.Unknown,
     val availableLampAddresses: List<ListLampState> = emptyList()
 ) {
     data class ListLampState(
