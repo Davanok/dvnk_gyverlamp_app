@@ -11,12 +11,10 @@ import com.davanok.firelamp.data.repositories.DataStoreRepository
 import com.davanok.firelamp.data.repositories.FavouritesRepository
 import com.davanok.firelamp.data.repositories.LampControlRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -29,27 +27,26 @@ import kotlin.time.Duration.Companion.seconds
 class LampControlViewModel @Inject constructor(
     private val controlRepository: LampControlRepository,
     private val favouritesRepository: FavouritesRepository,
-    dataStoreRepository: DataStoreRepository
+    dataStoreRepository: DataStoreRepository,
 ) : ViewModel() {
 
     private val _appConfig = dataStoreRepository.subscribeToPreferences()
     private var defaultTimeout: Duration = 1.seconds
-    private val _uiState = MutableStateFlow(LampControlUiState())
-
-    private var loadJob: Job? = null
+    private val _uiState = MutableStateFlow(LampControlUiState(lampConnected = false, isLoading = true))
 
     val uiState: StateFlow<LampControlUiState> = combine(
         _appConfig,
         _uiState
     ) { appConfig, state ->
         defaultTimeout = appConfig.defaultTimeout
+        loadLampData(appConfig.latestLampAddress)
         state.copy(
             currentLampAddress = appConfig.latestLampAddress,
         )
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
-        initialValue = LampControlUiState()
+        initialValue = LampControlUiState(lampConnected = false, isLoading = true)
     )
 
     private fun safeNormalize(value: UByte, min: UByte, max: UByte): Float {
@@ -79,6 +76,7 @@ class LampControlViewModel @Inject constructor(
             val scale = safeNormalize(lampState.scale, currentEffect.minScale, currentEffect.maxScale)
 
             it.copy(
+                isLoading = false,
                 lampPowerOn = lampState.powerOn,
                 lampCurrentEffect = currentEffect,
                 lampBrightness = brightness,
@@ -137,18 +135,6 @@ class LampControlViewModel @Inject constructor(
             .onFailure {
                 _uiState.update { it.copy(lampConnected = false) }
             }
-    }
-
-    private fun safeLoadLampData(lampAddress: LampAddress) {
-        loadJob?.cancel()
-        loadJob = viewModelScope.launch { loadLampData(lampAddress) }
-    }
-
-    init {
-        viewModelScope.launch {
-            val config = _appConfig.first()
-            safeLoadLampData(config.latestLampAddress)
-        }
     }
 
     /* ---------- Public API ---------- */
@@ -228,6 +214,7 @@ class LampControlViewModel @Inject constructor(
 }
 
 data class LampControlUiState(
+    val isLoading: Boolean = false,
     val lampConnected: Boolean = false,
     val currentLampAddress: LampAddress = LampAddress.Unknown,
     val lampPowerOn: Boolean = false,

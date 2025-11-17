@@ -106,7 +106,12 @@ fun LampControlNavModule(
                     title = { Text(text = stringResource(R.string.lamp_control)) },
                 ) {
                     LampsListScreen(
-                        onLampChange = { backStack.add(Route.LampControl.Control(it.getDisplayName())) }
+                        onSingleLamp = { address ->
+                            backStack[backStack.lastIndex] = Route.LampControl.Control(address.getDisplayName())
+                        },
+                        onLampChange = { address ->
+                            backStack.add(Route.LampControl.Control(address.getDisplayName()))
+                        }
                     )
                 }
             }

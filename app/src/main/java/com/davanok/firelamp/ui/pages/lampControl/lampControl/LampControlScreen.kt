@@ -1,12 +1,22 @@
 package com.davanok.firelamp.ui.pages.lampControl.lampControl
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.SignalWifiConnectedNoInternet4
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CircularWavyProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -28,6 +38,8 @@ fun LampControlScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     Content(
+        isLoading = uiState.isLoading,
+        isLampConnected = uiState.lampConnected,
         lampPowerOn = uiState.lampPowerOn,
         onPowerOnChange = viewModel::setLampPowerOn,
         cycleEnabled = uiState.lampCycleEnabled,
@@ -49,6 +61,90 @@ fun LampControlScreen(
 
 @Composable
 private fun Content(
+    isLoading: Boolean,
+    isLampConnected: Boolean,
+    lampPowerOn: Boolean,
+    onPowerOnChange: (Boolean) -> Unit,
+    cycleEnabled: Boolean,
+    onCycleEnabledChange: (Boolean) -> Unit,
+    currentEffect: LampEffect,
+    availableEffects: List<LampEffect>,
+    onEffectChange: (LampEffect) -> Unit,
+    brightness: Float,
+    speed: Float,
+    scale: Float,
+    scaleIsColor: Boolean,
+    onBrightnessChange: (Float) -> Unit,
+    onSpeedChange: (Float) -> Unit,
+    onScaleChange: (Float) -> Unit,
+    onRandomEffectValues: () -> Unit,
+    onDefaultEffectValues: () -> Unit
+) {
+    when {
+        isLoading -> LoadingContent()
+        isLampConnected -> ControlContent(
+            lampPowerOn = lampPowerOn,
+            onPowerOnChange = onPowerOnChange,
+            cycleEnabled = cycleEnabled,
+            onCycleEnabledChange = onCycleEnabledChange,
+            currentEffect = currentEffect,
+            availableEffects = availableEffects,
+            onEffectChange = onEffectChange,
+            brightness = brightness,
+            speed = speed,
+            scale = scale,
+            scaleIsColor = scaleIsColor,
+            onBrightnessChange = onBrightnessChange,
+            onSpeedChange = onSpeedChange,
+            onScaleChange = onScaleChange,
+            onRandomEffectValues = onRandomEffectValues,
+            onDefaultEffectValues = onDefaultEffectValues
+        )
+        else -> LampNotConnectedContent()
+    }
+}
+
+@Composable
+private fun LampNotConnectedContent(){
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center,
+    ) {
+        Card {
+            Column(
+                modifier = Modifier
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                    .fillMaxWidth(0.66f)
+                    .aspectRatio(0.75f),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.SpaceEvenly
+            ) {
+                Icon(
+                    imageVector = Icons.Default.SignalWifiConnectedNoInternet4,
+                    contentDescription = stringResource(R.string.lamp_connection_failed)
+                )
+
+                Text(
+                    text = stringResource(R.string.lamp_connection_failed)
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun LoadingContent(){
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center,
+    ) {
+        CircularWavyProgressIndicator()
+    }
+}
+
+@Composable
+private fun ControlContent(
     lampPowerOn: Boolean,
     onPowerOnChange: (Boolean) -> Unit,
     cycleEnabled: Boolean,

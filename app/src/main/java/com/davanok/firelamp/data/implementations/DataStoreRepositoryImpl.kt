@@ -7,6 +7,7 @@ import com.davanok.firelamp.data.model.FireLampPreferences
 import com.davanok.firelamp.data.model.PreferencesKeys
 import com.davanok.firelamp.data.repositories.DataStoreRepository
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.lastOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.Json
@@ -54,5 +55,5 @@ class DataStoreRepositoryImpl(
             val raw = preferences[PreferencesKeys.APP_SETTINGS]
             if (raw == null) FireLampPreferences()
             else Json.decodeFromString(FireLampPreferences.serializer(), raw)
-        }
+        }.distinctUntilChanged()
 }

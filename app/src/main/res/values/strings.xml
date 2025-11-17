@@ -42,9 +42,7 @@
     <string name="lamp_connection_failed_icon">Lamp connection failed</string>
     <string name="lamp_connection_unknown_icon">Lamp connection unknown</string>
 
-    <string name="lamp_connected">Connected</string>
-    <string name="lamp_connection_failed">Failed</string>
-    <string name="lamp_check_connection">Check</string>
+    <string name="lamp_connection_failed">Failed to connect to lamp</string>
 
     <string name="saved_lamps">Saved lamps</string>
 

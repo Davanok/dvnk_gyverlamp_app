@@ -26,6 +26,7 @@ import com.davanok.firelamp.data.model.LampAddress
 @Composable
 fun LampsListScreen(
     viewModel: LampsListViewModel = hiltViewModel(),
+    onSingleLamp: (LampAddress) -> Unit,
     onLampChange: (LampAddress) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -34,7 +35,7 @@ fun LampsListScreen(
         if (uiState.availableLampAddresses.size == 1) {
             val lamp = uiState.availableLampAddresses.first()
             viewModel.setCurrentLamp(lamp.address)
-            onLampChange(lamp.address)
+            onSingleLamp(lamp.address)
         }
     }
 
